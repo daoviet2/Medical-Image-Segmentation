@@ -58,3 +58,12 @@ def build_model(config: Dict[str, Any]) -> nn.Module:
 
 
 __all__ = ["UNet", "count_parameters", "build_model", "register_model", "MODEL_REGISTRY"]
+
+# Đăng ký các mô hình SegFormer của TV2
+try:
+    from . import segformer as _segformer
+    from .segformer import SegFormerSegmentation
+    __all__.append("SegFormerSegmentation")
+except ImportError:
+    pass
+

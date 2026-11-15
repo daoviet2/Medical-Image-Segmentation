@@ -1,0 +1,9 @@
+# Thí nghiệm Ablation Loss: SegFormer MiT-B0 với Tversky Loss
+_base_: segformer_b0_bce_dice.yaml
+
+train:
+  loss: "tversky"
+  loss_params:
+    alpha: 0.3
+    beta: 0.7
+    smooth: 1.0
