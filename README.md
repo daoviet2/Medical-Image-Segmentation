@@ -3,7 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![WandB](https://img.shields.io/badge/Weights_&_Biases-kvasir--seg--polyp-gold.svg)](https://wandb.ai/)
+[![WandB](https://img.shields.io/badge/Weights_&_Biases-kvasir--seg--polyp-gold.svg)](https://wandb.ai/daoviet-uet/kvasir-seg-polyp)
 
 Dự án thực nghiệm phân đoạn polyp nội soi mức điểm ảnh trên tập dữ liệu Kvasir-SEG (1000 ảnh kèm mặt nạ phân đoạn).
 
@@ -251,13 +251,13 @@ python scripts/evaluate.py --checkpoint outputs/checkpoints/unet_scratch_bce_dic
 ## 7. Trọng số mô hình
 
 Trọng số tốt nhất (`best.pth`) của các lần chạy được lưu trữ trực tiếp trên tab **Artifacts** của dự án Weights & Biases:
-- [Dashboard và Model Artifacts dự án trên WandB](https://wandb.ai/) (project: `kvasir-seg-polyp`).
+- [Dashboard và Model Artifacts dự án trên WandB](https://wandb.ai/daoviet-uet/kvasir-seg-polyp) (team: `daoviet-uet`, project: `kvasir-seg-polyp`).
 
 Người dùng có thể tải trực tiếp file `.pth` từ giao diện web của WandB hoặc tải tự động bằng Python:
 ```python
 import wandb
 run = wandb.init()
-artifact = run.use_artifact("kvasir-seg-polyp/unet_scratch_bce_dice_s42_256_model:best", type="model")
+artifact = run.use_artifact("daoviet-uet/kvasir-seg-polyp/unet_scratch_bce_dice_s42_256_model:best", type="model")
 artifact_dir = artifact.download(root="outputs/checkpoints/unet_scratch_bce_dice_s42_256")
 ```
 
