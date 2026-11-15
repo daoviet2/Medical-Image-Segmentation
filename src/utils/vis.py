@@ -188,3 +188,51 @@ def save_batch_visualization(
 
     print(f"[Visualization] Đã lưu hình trực quan hóa {num_samples} mẫu vào: '{save_path}'")
     return os.path.abspath(save_path)
+
+def save_prediction_visualization(image, gt_mask, pred_mask, save_path, box=None):
+    """Save image, ground truth, prediction and overlay for one sample."""
+    if image.ndim != 3 or image.shape[2] != 3 or image.dtype != np.uint8:
+        raise ValueError("image must be an H x W x 3 RGB uint8 array")
+
+    def as_binary_mask(mask):
+        if isinstance(mask, torch.Tensor):
+            mask = mask.detach().cpu().numpy()
+        mask = np.asarray(mask)
+        if mask.ndim == 3 and mask.shape[0] == 1:
+            mask = mask[0]
+        if mask.shape != image.shape[:2]:
+            raise ValueError(f"Mask shape {mask.shape} must match {image.shape[:2]}")
+        return mask > 0
+
+    gt = as_binary_mask(gt_mask)
+    pred = as_binary_mask(pred_mask)
+    overlay = create_overlay(image, pred, color=(0, 255, 0), draw_border=False)
+    contours, _ = cv2.findContours(
+        gt.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+    )
+    cv2.drawContours(overlay, contours, -1, (255, 0, 0), 1)
+
+    prompted_image = image if box is None else draw_bounding_box(image, box)
+    image_title = "Image" if box is None else "Image + GT box"
+
+    fig, axes = plt.subplots(1, 4, figsize=(14, 4))
+    try:
+        axes[0].imshow(prompted_image)
+        axes[1].imshow(gt, cmap="gray", vmin=0, vmax=1)
+        axes[2].imshow(pred, cmap="gray", vmin=0, vmax=1)
+        axes[3].imshow(overlay)
+
+        for ax, title in zip(
+            axes, (image_title, "Ground truth", "Prediction", "Overlay")
+        ):
+            ax.set_title(title)
+            ax.axis("off")
+
+        save_path = os.path.abspath(save_path)
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        fig.tight_layout()
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+    finally:
+        plt.close(fig)
+
+    return save_path

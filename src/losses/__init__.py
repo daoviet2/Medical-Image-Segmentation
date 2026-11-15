@@ -78,3 +78,5 @@ __all__ = [
     "register_loss",
     "build_loss",
 ]
+
+from . import losses as _losses
