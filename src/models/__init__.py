@@ -57,4 +57,14 @@ def build_model(config: Dict[str, Any]) -> nn.Module:
     return MODEL_REGISTRY[name](model_cfg)
 
 
-__all__ = ["UNet", "count_parameters", "build_model", "register_model", "MODEL_REGISTRY"]
+# Nạp các kiến trúc mô hình mở rộng và đăng ký vào MODEL_REGISTRY
+from .unet_resnet34 import UNetResNet34, build_unet_resnet34
+
+__all__ = [
+    "UNet",
+    "UNetResNet34",
+    "count_parameters",
+    "build_model",
+    "register_model",
+    "MODEL_REGISTRY",
+]

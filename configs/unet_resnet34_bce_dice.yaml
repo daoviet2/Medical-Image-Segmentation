@@ -1,0 +1,27 @@
+# Thí nghiệm: U-Net với Pretrained Encoder ResNet34 (ImageNet)
+# Kế thừa toàn bộ cấu hình chuẩn từ configs/base.yaml
+_base_: base.yaml
+
+model:
+  name: "unet_resnet34"
+  encoder_name: "resnet34"
+  encoder_weights: "imagenet"
+  encoder_pretrained: true
+  num_classes: 1
+  in_channels: 3
+
+train:
+  optimizer: "adamw"             # AdamW tối ưu hiệu quả cho fine-tuning pretrained weights
+  lr: 0.0003                     # Learning rate 3e-4 (thấp hơn scratch 1e-3 để bảo vệ đặc trưng pretrained)
+  weight_decay: 0.0001
+  loss: "bce_dice"
+  loss_params:
+    bce_weight: 1.0
+    dice_weight: 1.0
+    smooth: 1.0
+  epochs: 50
+  scheduler: "cosine"
+  warmup_epochs: 3
+  min_lr: 0.00001
+  early_stopping_patience: 10
+  amp: true
