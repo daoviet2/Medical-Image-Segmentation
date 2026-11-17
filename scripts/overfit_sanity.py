@@ -1,4 +1,4 @@
-"""Script kiểm tra khả năng overfit (học thuộc) trên 10 ảnh cố định (Sanity Check).
+"""Script kiểm tra khả năng overfit trên 10 ảnh cố định (Sanity Check).
 
 Mục đích:
 - Xác thực toàn bộ pipeline: Mô hình U-Net + Hàm loss BCE+Dice + Luồng tensor + Gradient.
@@ -13,7 +13,7 @@ import os
 import sys
 import tempfile
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Cấu hình thư mục cache cho Matplotlib
 if "MPLCONFIGDIR" not in os.environ:
@@ -261,6 +261,7 @@ def run_overfit_sanity(
     synthetic: bool = False,
     output_dir: str = "outputs/overfit",
     seed: int = 42,
+    tag: Optional[str] = None,
 ) -> Dict[str, float]:
     """Hàm chính thực hiện quy trình kiểm tra overfit trên 10 ảnh cố định."""
     seed_everything(seed)
@@ -275,6 +276,11 @@ def run_overfit_sanity(
 
     # 2. Nạp cấu hình
     cfg = load_config(config_path)
+    model_name = cfg.get("model", {}).get("name", "unet_scratch")
+    if tag is None:
+        suffix = f"_{model_name}" if model_name != "unet_scratch" else ""
+    else:
+        suffix = f"_{tag}" if tag else ""
 
     # 3. Nạp 10 mẫu cố định
     print(f"[Dữ liệu] Đang chuẩn bị {num_samples} mẫu cố định (chế độ synthetic={synthetic})...")
@@ -286,7 +292,7 @@ def run_overfit_sanity(
     print(f"  -> Batch masks shape : {masks.shape}, dtype={masks.dtype}, unique={torch.unique(masks).tolist()}")
 
     # 4. Khởi tạo mô hình & loss
-    print("[Mô hình] Khởi tạo mô hình U-Net từ cấu hình...")
+    print(f"[Mô hình] Khởi tạo mô hình '{model_name}' từ cấu hình...")
     model = build_model(cfg).to(device)
     model.train()
 
@@ -296,7 +302,8 @@ def run_overfit_sanity(
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.0)
 
     # 5. Vòng lặp huấn luyện overfit
-    log_csv_path = os.path.join(output_dir, f"overfit_{num_samples}_log.csv")
+    log_csv_path = os.path.join(output_dir, f"overfit_{num_samples}{suffix}_log.csv")
+    img_save_path = os.path.join(output_dir, f"overfit_{num_samples}{suffix}.png")
     csv_rows = []
     start_time = time.time()
 
@@ -308,6 +315,8 @@ def run_overfit_sanity(
     last_loss = 1.0
     last_dice = 0.0
     last_iou = 0.0
+    iter_reach_95 = None
+    iter_reach_99 = None
 
     for step in range(1, iters + 1):
         model.train()
@@ -327,6 +336,11 @@ def run_overfit_sanity(
         last_loss = loss.item()
         last_dice = step_dice
         last_iou = step_iou
+
+        if iter_reach_95 is None and step_dice >= 0.95:
+            iter_reach_95 = step
+        if iter_reach_99 is None and step_dice >= 0.99:
+            iter_reach_99 = step
 
         csv_rows.append({
             "iter": step,
@@ -367,6 +381,8 @@ def run_overfit_sanity(
     print(f"  - Train Dice cuối cùng : {last_dice:.4f}")
     print(f"  - Eval Macro Dice      : {eval_dice_mean:.4f}")
     print(f"  - Eval Macro IoU       : {eval_iou_mean:.4f}")
+    print(f"  - Iter đạt Dice >= 0.95: {iter_reach_95 if iter_reach_95 else 'Chưa đạt'}")
+    print(f"  - Iter đạt Dice >= 0.99: {iter_reach_99 if iter_reach_99 else 'Chưa đạt'}")
     print(f"  - Tổng thời gian       : {total_time:.1f} giây")
     print("=" * 75)
 
@@ -377,7 +393,6 @@ def run_overfit_sanity(
         print(f"{i+1:<6} | {ids[i]:<26} | {eval_dices[i].item():<10.4f} | {eval_ious[i].item():<10.4f}")
 
     # 7. Lưu hình ảnh trực quan hóa
-    img_save_path = os.path.join(output_dir, f"overfit_{num_samples}.png")
     plot_overfit_results(
         orig_images=orig_images,
         masks=masks,
@@ -411,6 +426,8 @@ def run_overfit_sanity(
         "final_train_dice": last_dice,
         "eval_dice": eval_dice_mean,
         "eval_iou": eval_iou_mean,
+        "iter_reach_95": iter_reach_95,
+        "iter_reach_99": iter_reach_99,
         "total_time_s": total_time,
     }
 
@@ -426,6 +443,7 @@ def main():
     parser.add_argument("--synthetic", action="store_true", help="Sử dụng dữ liệu nhân tạo giả lập")
     parser.add_argument("--output-dir", type=str, default="outputs/overfit", help="Thư mục xuất kết quả")
     parser.add_argument("--seed", type=int, default=42, help="Seed ngẫu nhiên")
+    parser.add_argument("--tag", type=str, default=None, help="Hậu tố đặt tên file kết quả (ví dụ: 'resnet34')")
 
     args = parser.parse_args()
 
@@ -439,6 +457,7 @@ def main():
         synthetic=args.synthetic,
         output_dir=args.output_dir,
         seed=args.seed,
+        tag=args.tag,
     )
 
 
