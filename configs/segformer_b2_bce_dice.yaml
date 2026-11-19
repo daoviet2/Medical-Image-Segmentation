@@ -1,0 +1,23 @@
+# Cấu hình SegFormer MiT-B2 với hàm mất mát BCE + SoftDice
+# Kế thừa toàn bộ cấu hình chuẩn từ configs/base.yaml
+_base_: base.yaml
+
+model:
+  name: "segformer_b2"
+  encoder_pretrained: true
+  pretrained_name: "nvidia/mit-b2"
+
+train:
+  loss: "bce_dice"
+  loss_params:
+    bce_weight: 1.0
+    dice_weight: 1.0
+    smooth: 1.0
+  optimizer: "adamw"
+  lr: 0.00006
+  weight_decay: 0.0001
+  epochs: 50
+  scheduler: "cosine"
+  warmup_epochs: 3
+  early_stopping_patience: 10
+  amp: true

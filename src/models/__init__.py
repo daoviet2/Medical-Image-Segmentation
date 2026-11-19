@@ -60,11 +60,22 @@ def build_model(config: Dict[str, Any]) -> nn.Module:
 # Nạp các kiến trúc mô hình mở rộng và đăng ký vào MODEL_REGISTRY
 from .unet_resnet34 import UNetResNet34, build_unet_resnet34
 
+# Đăng ký các mô hình SegFormer của TV2
+try:
+    from . import segformer as _segformer
+    from .segformer import SegFormerSegmentation
+except ImportError:
+    SegFormerSegmentation = None
+
 __all__ = [
     "UNet",
     "UNetResNet34",
+    "build_unet_resnet34",
     "count_parameters",
     "build_model",
     "register_model",
     "MODEL_REGISTRY",
 ]
+
+if SegFormerSegmentation is not None:
+    __all__.append("SegFormerSegmentation")
